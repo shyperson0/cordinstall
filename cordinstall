@@ -1,0 +1,38 @@
+#!/bin/python
+import urllib3
+import os
+import sys
+from pathlib import Path
+
+if len(sys.argv) != 1:
+    discordpath = sys.argv[1]
+else:
+    discordpath = "/opt/discord"
+print("Installing to {0}".format(discordpath))
+path = str(Path.home()) + "/.cache/cordinstall"
+os.system("mkdir -p {0}".format(path))
+
+#Download the latest discord package
+print("Getting Discord")
+http = urllib3.PoolManager()
+r = http.request('GET', 'https://discordapp.com/api/download?platform=linux&format=tar.gz', preload_content=False)
+if r.status != 200:
+    print("Weird error!11!!!")
+    print("Error code {0}".format(r.status))
+    exit()
+
+#Save
+with open("{0}/discord.tar.gz".format(path), 'wb') as out:
+    while True:
+        data = r.read()
+        if not data:
+            break
+        out.write(data)
+r.release_conn()
+
+#Replace old Discord
+print("Updating...")
+os.system("tar xvf {0}/discord.tar.gz --directory {0}".format(path))
+os.system("rm -rf {0}/*".format(discordpath))
+os.system("mv {0}/Discord/* {1}".format(path, discordpath))
+exit()
