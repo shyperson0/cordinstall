@@ -4,47 +4,79 @@ import os
 import sys
 from pathlib import Path
 
-if len(sys.argv) != 1:
-    discordpath = sys.argv[1]
-else:
-    discordpath = "/opt/discord"
-print("Installing to {0}".format(discordpath))
+discordpath = "/opt/discord"
+noise = False
+yes = False
+helptext = """ Cordinstall; An installer and updater for Discord and OpenAsar on linux
+USAGE: cordinstall [options]
+    optons:
+        -d Path/To/Discord      Path to install Discord to
+        -q                      Quiet output
+        -h                      Print this help
+        -y                      Install both Discord and OpenAsar without prompt
+"""
+
+for index, argument in enumerate(sys.argv):
+    match argument:
+        case "-d":
+            discordpath = sys.argv[index+1]
+            sys.argv.pop(index+1)
+        case "-h":
+            print(helptext)
+            exit()
+        case "-q":
+            noise = True
+        case "-cutegirl":
+            print("simo")
+        case "-y":
+            yes = True
+
+os.system("mkdir -p {0}".format(discordpath))
+if not noise:
+    print("Installing to {0}".format(discordpath))
 path = str(Path.home()) + "/.cache/cordinstall"
 os.system("mkdir -p {0}".format(path))
 
-#Download the latest discord package
-print("Getting Discord")
-http = urllib3.PoolManager()
-r = http.request('GET', 'https://discordapp.com/api/download?platform=linux&format=tar.gz', preload_content=False)
-if r.status != 200:
-    print("Weird error!11!!!")
-    print("Error code {0}".format(r.status))
-    exit()
-
-#Save
-with open("{0}/discord.tar.gz".format(path), 'wb') as out:
-    while True:
-        data = r.read()
-        if not data:
-            break
-        out.write(data)
-r.release_conn()
-
-#Replace old Discord
-print("Updating...")
-os.system("tar xvf {0}/discord.tar.gz --directory {0}".format(path))
-os.system("sudo rm -rf {0}/*".format(discordpath))
-os.system("sudo mv {0}/Discord/* {1}".format(path, discordpath))
-
-print("Install OpenAsar? [Y/n]")
-if input("->").lower().startswith("y"):
-    print("Downloading OpenAsar")
-    r = http.request('GET', 'https://github.com/GooseMod/OpenAsar/releases/download/nightly/app.asar', preload_content=False)
+print("Install discord?[y/N]")
+if yes or input("->").lower().startswith("y"):
+    if not noise:
+        print("Downloading: Discord")
+    http = urllib3.PoolManager()
+    r = http.request('GET', 'https://discordapp.com/api/download?platform=linux&format=tar.gz', preload_content=False)
     if r.status != 200:
-        print("Error while getting OpenAsar!!!!")
-        print("Error code{0}".format(r.status))
+        if not noise:
+            print("Weird error!11!!!")
+        print("Error code {0}".format(r.status))
         exit()
 
+    with open("{0}/discord.tar.gz".format(path), 'wb') as out:
+        while True:
+            data = r.read()
+            if not data:
+                break
+            out.write(data)
+        r.release_conn()
+
+    if not noise:
+        print("Installing: Discord ")
+        os.system("tar xvf {0}/discord.tar.gz --directory {0}".format(path))
+    else:
+        os.system("tar xf {0}/discord.tar.gz --directory {0}".format(path))
+    os.system("sudo rm -rf {0}/*".format(discordpath))
+    os.system("sudo mv {0}/Discord/* {1}".format(path, discordpath))
+
+print("Install OpenAsar? [y/N]")
+if yes or input("->").lower().startswith("y"):
+    if not noise:
+        print("Downloading: OpenAsar")
+    http = urllib3.PoolManager()
+    r = http.request('GET', 'https://github.com/GooseMod/OpenAsar/releases/download/nightly/app.asar', preload_content=False)
+    if r.status != 200:
+        if not noise:
+            print("Error while getting OpenAsar!!!!")
+        print("Error code{0}".format(r.status))
+        exit()
+    
     with open("{0}/app.asar".format(path), 'wb') as out:
         while True:
             data = r.read()
@@ -52,10 +84,12 @@ if input("->").lower().startswith("y"):
                 break
             out.write(data)
     r.release_conn()
-
-    print("Installing...")
+    
+    if not noise:
+        print("Installing: OpenAsar")
     os.system("sudo rm {0}/resources/app.asar".format(discordpath))
-    print("{0}/app.asar".format(path))
-    print("{0}/resources/app.asar".format(discordpath))
+    if not noise:
+        print("{0}/app.asar".format(path))
+        print("{0}/resources/app.asar".format(discordpath))
     os.system("sudo mv {0}/app.asar {1}/resources/app.asar".format(path, discordpath))
 exit()
